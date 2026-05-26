@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>wwebjs-gateway · login</title>
+        <style>
+            :root {
+                --bg: #0f172a;
+                --panel: #1e293b;
+                --muted: #64748b;
+                --text: #e2e8f0;
+                --red: #ef4444;
+                --blue: #3b82f6;
+                --accent: #38bdf8;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+            }
+            body {
+                background: var(--bg);
+                color: var(--text);
+                font-family:
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+                display: grid;
+                place-items: center;
+            }
+            .card {
+                background: var(--panel);
+                border-radius: 14px;
+                padding: 1.5rem 1.5rem 1.25rem;
+                width: min(360px, 90vw);
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+            }
+            h1 {
+                margin: 0 0 0.25rem;
+                font-size: 1.1rem;
+            }
+            p.muted {
+                color: var(--muted);
+                margin: 0 0 1rem;
+                font-size: 0.85rem;
+            }
+            label {
+                display: block;
+                font-size: 0.8rem;
+                color: var(--muted);
+                margin-bottom: 0.25rem;
+            }
+            input {
+                width: 100%;
+                padding: 0.55rem 0.7rem;
+                border-radius: 8px;
+                background: #0f172a;
+                color: var(--text);
+                border: 1px solid #334155;
+                font-size: 0.95rem;
+            }
+            input:focus {
+                outline: 2px solid var(--accent);
+                outline-offset: 0;
+            }
+            .row {
+                margin-bottom: 0.75rem;
+            }
+            button {
+                width: 100%;
+                padding: 0.6rem;
+                border-radius: 8px;
+                background: var(--blue);
+                color: white;
+                border: 0;
+                cursor: pointer;
+                font-size: 0.95rem;
+                font-weight: 600;
+            }
+            button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            .err {
+                margin-top: 0.6rem;
+                color: var(--red);
+                font-size: 0.85rem;
+                min-height: 1.1em;
+            }
+            .footer {
+                margin-top: 1rem;
+                text-align: center;
+                font-size: 0.75rem;
+                color: var(--muted);
+            }
+        </style>
+    </head>
+    <body>
+        <form class="card" id="form">
+            <h1>wwebjs-gateway</h1>
+            <p class="muted">Masuk untuk membuka dashboard &amp; API docs.</p>
+            <div class="row">
+                <label for="username">Username</label>
+                <input
+                    id="username"
+                    name="username"
+                    autocomplete="username"
+                    required
+                />
+            </div>
+            <div class="row">
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                />
+            </div>
+            <button id="submitBtn" type="submit">Sign in</button>
+            <div class="err" id="err"></div>
+            <div class="footer">
+                REST API tetap dapat diakses dengan API key.
+            </div>
+        </form>
+        <script>
+            const params = new URLSearchParams(location.search);
+            const next = params.get('next') || '/dashboard';
+            const form = document.getElementById('form');
+            const err = document.getElementById('err');
+            const btn = document.getElementById('submitBtn');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                err.textContent = '';
+                btn.disabled = true;
+                const data = {
+                    username: form.username.value,
+                    password: form.password.value,
+                };
+                try {
+                    const res = await fetch('/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                        credentials: 'same-origin',
+                    });
+                    const j = await res.json().catch(() => ({}));
+                    if (!res.ok || !j.status) {
+                        err.textContent = j.error || 'login gagal';
+                        return;
+                    }
+                    location.replace(next);
+                } catch (e) {
+                    err.textContent = e.message;
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        </script>
+    </body>
+</html>

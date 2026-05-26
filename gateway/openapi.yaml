@@ -1,0 +1,303 @@
+openapi: 3.0.3
+info:
+    title: wwebjs-gateway
+    version: 0.2.0
+    description: |
+        REST API gateway untuk WhatsApp menggunakan whatsapp-web.js.
+        Multi-session, antrian dengan throttle anti-ban, dan webhook pesan masuk.
+servers:
+    - url: http://localhost:3000
+security:
+    - bearerAuth: []
+components:
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+    schemas:
+        Job:
+            type: object
+            properties:
+                id: { type: string }
+                type: { type: string, enum: [text, media, location] }
+                target: { type: string }
+                status: { type: string, enum: [pending, sending, sent, failed] }
+                scheduledAt: { type: string, nullable: true }
+                createdAt: { type: string }
+                sentAt: { type: string, nullable: true }
+                error: { type: string, nullable: true }
+                result:
+                    type: object
+                    nullable: true
+                    properties:
+                        id: { type: string }
+                        to: { type: string }
+                tries: { type: integer }
+        SessionState:
+            type: object
+            properties:
+                id: { type: string }
+                ready: { type: boolean }
+                authenticated: { type: boolean }
+                hasQr: { type: boolean }
+                info:
+                    type: object
+                    nullable: true
+                    properties:
+                        pushname: { type: string }
+                        wid: { type: string }
+                        platform: { type: string }
+paths:
+    /:
+        get:
+            security: []
+            summary: Public root
+            responses:
+                '200': { description: ok }
+    /sessions:
+        get:
+            summary: List all sessions
+            responses:
+                '200': { description: ok }
+        post:
+            summary: Create session
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                id: { type: string, example: account-a }
+                            required: [id]
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}:
+        delete:
+            summary: Remove session
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+                - in: query
+                  name: logout
+                  schema: { type: boolean }
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/health:
+        get:
+            summary: Session status
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/qr:
+        get:
+            summary: Render QR PNG
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+            responses:
+                '200':
+                    description: PNG image
+                    content:
+                        image/png: {}
+    /sessions/{sessionId}/qr.txt:
+        get:
+            summary: Raw QR string
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/logout:
+        post:
+            summary: Logout
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/check:
+        get:
+            summary: Check whether a number is registered on WhatsApp
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+                - in: query
+                  name: target
+                  required: true
+                  schema: { type: string }
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/chats:
+        get:
+            summary: List recent chats
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/send/text:
+        post:
+            summary: Enqueue text message
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                target:
+                                    { type: string, example: '628123456789' }
+                                message: { type: string, example: hello }
+                                scheduleAt:
+                                    type: string
+                                    format: date-time
+                                    nullable: true
+                            required: [target, message]
+            responses:
+                '200':
+                    description: job created
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status: { type: boolean }
+                                    job: { $ref: '#/components/schemas/Job' }
+    /sessions/{sessionId}/send/media:
+        post:
+            summary: Enqueue media message
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                target: { type: string }
+                                fileUrl: { type: string }
+                                base64: { type: string }
+                                mimetype: { type: string }
+                                filename: { type: string }
+                                caption: { type: string }
+                                asDocument: { type: boolean }
+                                asVoice: { type: boolean }
+                                asSticker: { type: boolean }
+                                scheduleAt:
+                                    {
+                                        type: string,
+                                        format: date-time,
+                                        nullable: true,
+                                    }
+                            required: [target]
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/send/location:
+        post:
+            summary: Enqueue location message
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                target: { type: string }
+                                latitude: { type: number }
+                                longitude: { type: number }
+                                name: { type: string }
+                                address: { type: string }
+                                scheduleAt:
+                                    {
+                                        type: string,
+                                        format: date-time,
+                                        nullable: true,
+                                    }
+                            required: [target, latitude, longitude]
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/queue:
+        get:
+            summary: List jobs in queue
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+                - in: query
+                  name: status
+                  schema:
+                      { type: string, enum: [pending, sending, sent, failed] }
+                - in: query
+                  name: limit
+                  schema: { type: integer }
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/queue/{jobId}:
+        get:
+            summary: Get job details
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+                - in: path
+                  name: jobId
+                  required: true
+                  schema: { type: string }
+            responses:
+                '200': { description: ok }
+        delete:
+            summary: Cancel pending job
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+                - in: path
+                  name: jobId
+                  required: true
+                  schema: { type: string }
+            responses:
+                '200': { description: ok }
+    /sessions/{sessionId}/queue/purge:
+        post:
+            summary: Remove finished (sent + failed) jobs
+            parameters:
+                - in: path
+                  name: sessionId
+                  required: true
+                  schema: { type: string }
+            responses:
+                '200': { description: ok }

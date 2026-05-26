@@ -1,0 +1,19 @@
+{
+    "name": "wwebjs-gateway",
+    "version": "0.3.0",
+    "private": true,
+    "description": "REST API gateway for WhatsApp using whatsapp-web.js (Fonnte-style) with multi-session, queue, OpenAPI, dashboard, and login",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node --watch server.js"
+    },
+    "dependencies": {
+        "cookie-parser": "^1.4.7",
+        "dotenv": "^16.4.5",
+        "express": "^4.21.2",
+        "qrcode": "^1.5.4",
+        "swagger-ui-express": "^5.0.1",
+        "yamljs": "^0.3.0"
+    }
+}

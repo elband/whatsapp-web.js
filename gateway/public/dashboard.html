@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>wwebjs-gateway dashboard</title>
+        <style>
+            :root {
+                --bg: #0f172a;
+                --panel: #1e293b;
+                --muted: #64748b;
+                --text: #e2e8f0;
+                --green: #22c55e;
+                --red: #ef4444;
+                --yellow: #eab308;
+                --blue: #3b82f6;
+                --accent: #38bdf8;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                background: var(--bg);
+                color: var(--text);
+                margin: 0;
+                font-family:
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+            }
+            header {
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid #334155;
+                display: flex;
+                gap: 1rem;
+                align-items: center;
+            }
+            header h1 {
+                margin: 0;
+                font-size: 1.1rem;
+                font-weight: 600;
+            }
+            header .spacer {
+                flex: 1;
+            }
+            .container {
+                padding: 1.5rem;
+                display: grid;
+                gap: 1.5rem;
+                grid-template-columns: minmax(280px, 360px) 1fr;
+                align-items: start;
+            }
+            .card {
+                background: var(--panel);
+                border-radius: 12px;
+                padding: 1rem 1.25rem;
+            }
+            .card h2 {
+                margin: 0 0 0.75rem;
+                font-size: 0.95rem;
+                color: var(--accent);
+                font-weight: 600;
+            }
+            .row {
+                display: flex;
+                gap: 0.5rem;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            input,
+            select,
+            button,
+            textarea {
+                background: #0f172a;
+                color: var(--text);
+                border: 1px solid #334155;
+                border-radius: 8px;
+                padding: 0.5rem 0.7rem;
+                font-size: 0.9rem;
+            }
+            input:focus,
+            textarea:focus,
+            select:focus {
+                outline: 2px solid var(--accent);
+                outline-offset: 0;
+            }
+            button {
+                cursor: pointer;
+                background: var(--blue);
+                border-color: transparent;
+                color: white;
+            }
+            button.secondary {
+                background: transparent;
+                border-color: #334155;
+            }
+            button.danger {
+                background: var(--red);
+            }
+            button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            .pill {
+                padding: 0.1rem 0.55rem;
+                border-radius: 999px;
+                font-size: 0.75rem;
+            }
+            .pill.green {
+                background: rgba(34, 197, 94, 0.15);
+                color: var(--green);
+            }
+            .pill.red {
+                background: rgba(239, 68, 68, 0.15);
+                color: var(--red);
+            }
+            .pill.yellow {
+                background: rgba(234, 179, 8, 0.15);
+                color: var(--yellow);
+            }
+            .pill.muted {
+                background: rgba(100, 116, 139, 0.2);
+                color: var(--muted);
+            }
+            .session-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .session-item {
+                display: flex;
+                gap: 0.5rem;
+                align-items: center;
+                padding: 0.55rem 0.6rem;
+                border-radius: 8px;
+                background: #0f172a;
+                cursor: pointer;
+            }
+            .session-item.active {
+                outline: 1px solid var(--accent);
+            }
+            .session-item small {
+                color: var(--muted);
+                display: block;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.85rem;
+            }
+            th,
+            td {
+                text-align: left;
+                padding: 0.4rem 0.6rem;
+                border-bottom: 1px solid #334155;
+            }
+            th {
+                color: var(--muted);
+                font-weight: 500;
+            }
+            .qr-box {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: center;
+                padding: 0.5rem;
+            }
+            .qr-box img {
+                background: white;
+                border-radius: 8px;
+                padding: 8px;
+                max-width: 100%;
+            }
+            .grid-2 {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+            .muted {
+                color: var(--muted);
+                font-size: 0.82rem;
+            }
+            textarea {
+                min-height: 80px;
+                resize: vertical;
+            }
+            pre {
+                background: #0b1221;
+                padding: 0.75rem;
+                border-radius: 8px;
+                overflow: auto;
+                font-size: 0.8rem;
+                max-height: 220px;
+            }
+            .stat {
+                display: inline-block;
+                padding: 0.1rem 0.5rem;
+                border-radius: 6px;
+                font-size: 0.75rem;
+                margin-right: 0.3rem;
+            }
+            .stat.pending {
+                background: rgba(234, 179, 8, 0.15);
+                color: var(--yellow);
+            }
+            .stat.sending {
+                background: rgba(59, 130, 246, 0.15);
+                color: var(--blue);
+            }
+            .stat.sent {
+                background: rgba(34, 197, 94, 0.15);
+                color: var(--green);
+            }
+            .stat.failed {
+                background: rgba(239, 68, 68, 0.15);
+                color: var(--red);
+            }
+            a {
+                color: var(--accent);
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>wwebjs-gateway</h1>
+            <span class="muted" id="version"></span>
+            <span class="spacer"></span>
+            <span class="muted" id="userBox"></span>
+            <span class="muted" style="display: none" id="apiKeyBox"
+                >API key</span
+            >
+            <input
+                id="apikey"
+                placeholder="API key"
+                style="min-width: 240px; display: none"
+            />
+            <button class="secondary" id="saveKey" style="display: none">
+                Save
+            </button>
+            <a href="/docs" target="_blank">API docs</a>
+            <button class="secondary" id="logoutBtn" style="display: none">
+                Logout
+            </button>
+        </header>
+
+        <div class="container">
+            <div>
+                <div class="card">
+                    <h2>Sessions</h2>
+                    <div class="row" style="margin-bottom: 0.5rem">
+                        <input id="newSession" placeholder="new session id" />
+                        <button id="createSession">Create</button>
+                    </div>
+                    <div class="session-list" id="sessionList"></div>
+                </div>
+
+                <div class="card" style="margin-top: 1rem" id="qrCard" hidden>
+                    <h2>Login QR</h2>
+                    <div class="qr-box">
+                        <img id="qrImg" alt="QR" />
+                        <span class="muted" id="qrHint"
+                            >Scan dari WhatsApp → Linked devices</span
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <h2>Status</h2>
+                    <div id="statusBox" class="muted">
+                        pilih session di kiri
+                    </div>
+                </div>
+
+                <div
+                    class="card"
+                    style="margin-top: 1rem"
+                    id="composeCard"
+                    hidden
+                >
+                    <h2>Send</h2>
+                    <div class="grid-2">
+                        <input
+                            id="target"
+                            placeholder="628123456789 atau xxx@g.us"
+                        />
+                        <select id="kind">
+                            <option value="text">Text</option>
+                            <option value="media">Media (URL)</option>
+                            <option value="location">Location</option>
+                        </select>
+                    </div>
+                    <div id="fields" style="margin-top: 0.5rem"></div>
+                    <div class="row" style="margin-top: 0.5rem">
+                        <input id="scheduleAt" type="datetime-local" />
+                        <span class="muted">opsional jadwal kirim (lokal)</span>
+                    </div>
+                    <div
+                        class="row"
+                        style="margin-top: 0.5rem; justify-content: flex-end"
+                    >
+                        <button id="enqueueBtn">Enqueue</button>
+                    </div>
+                </div>
+
+                <div
+                    class="card"
+                    style="margin-top: 1rem"
+                    id="queueCard"
+                    hidden
+                >
+                    <h2>Queue</h2>
+                    <div id="queueStats" class="muted"></div>
+                    <div
+                        style="
+                            margin-top: 0.5rem;
+                            max-height: 380px;
+                            overflow: auto;
+                        "
+                    >
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>id</th>
+                                    <th>type</th>
+                                    <th>target</th>
+                                    <th>status</th>
+                                    <th>scheduled</th>
+                                    <th>created</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="queueBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const $ = (id) => document.getElementById(id);
+            const apikeyInput = $('apikey');
+
+            // Mode auth: kalau backend punya login, dashboard pakai cookie session,
+            // dan API key tidak diperlukan (browser otomatis kirim cookie).
+            let authMode = 'cookie'; // diubah jadi 'apikey' kalau login dimatikan
+
+            async function bootstrap() {
+                try {
+                    const r = await fetch('/whoami', {
+                        credentials: 'same-origin',
+                    });
+                    const j = await r.json();
+                    if (j.loginEnabled) {
+                        authMode = 'cookie';
+                        $('userBox').textContent = j.user
+                            ? `· signed in as ${j.user}`
+                            : '';
+                        $('logoutBtn').style.display = '';
+                    } else {
+                        authMode = 'apikey';
+                        $('apiKeyBox').style.display = '';
+                        $('apikey').style.display = '';
+                        $('saveKey').style.display = '';
+                        apikeyInput.value =
+                            localStorage.getItem('apikey') || '';
+                    }
+                } catch {
+                    // fallback: anggap pakai apikey
+                    authMode = 'apikey';
+                    $('apiKeyBox').style.display = '';
+                    $('apikey').style.display = '';
+                    $('saveKey').style.display = '';
+                    apikeyInput.value = localStorage.getItem('apikey') || '';
+                }
+            }
+
+            $('saveKey').addEventListener('click', () => {
+                localStorage.setItem('apikey', apikeyInput.value.trim());
+                refresh();
+            });
+            $('logoutBtn').addEventListener('click', async () => {
+                await fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                });
+                location.replace('/login');
+            });
+
+            let currentSession = null;
+            let timer = null;
+
+            async function api(path, opts = {}) {
+                const headers = Object.assign({}, opts.headers || {});
+                if (authMode === 'apikey') {
+                    headers.Authorization = `Bearer ${apikeyInput.value.trim()}`;
+                }
+                if (opts.body && typeof opts.body !== 'string') {
+                    opts.body = JSON.stringify(opts.body);
+                    headers['Content-Type'] = 'application/json';
+                }
+                const res = await fetch(path, {
+                    ...opts,
+                    headers,
+                    credentials: 'same-origin',
+                });
+                const text = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = text;
+                }
+                if (res.status === 401 && authMode === 'cookie') {
+                    location.replace(
+                        '/login?next=' + encodeURIComponent(location.pathname),
+                    );
+                    throw new Error('redirecting');
+                }
+                if (!res.ok)
+                    throw new Error((data && data.error) || res.statusText);
+                return data;
+            }
+
+            function pill(state) {
+                if (state.ready) return '<span class="pill green">ready</span>';
+                if (state.authenticated)
+                    return '<span class="pill yellow">auth</span>';
+                if (state.hasQr || state.qr)
+                    return '<span class="pill yellow">scan QR</span>';
+                return '<span class="pill muted">starting</span>';
+            }
+
+            async function loadSessions() {
+                const list = $('sessionList');
+                list.innerHTML = '';
+                try {
+                    const r = await api('/sessions');
+                    for (const s of r.sessions) {
+                        const div = document.createElement('div');
+                        div.className =
+                            'session-item' +
+                            (currentSession === s.id ? ' active' : '');
+                        div.innerHTML = `
+              <div style="flex:1">
+                <div>${s.id} ${pill(s)}</div>
+                <small>${s.info ? s.info.pushname + ' / ' + s.info.wid : '—'}</small>
+                <small>
+                  <span class="stat pending">pending ${s.queue.pending || 0}</span>
+                  <span class="stat sent">sent ${s.queue.sent || 0}</span>
+                  <span class="stat failed">failed ${s.queue.failed || 0}</span>
+                </small>
+              </div>
+              <button class="secondary" data-act="select">open</button>
+              <button class="danger" data-act="delete" title="delete session">×</button>
+            `;
+                        div.querySelector('[data-act=select]').addEventListener(
+                            'click',
+                            () => {
+                                currentSession = s.id;
+                                refresh();
+                            },
+                        );
+                        div.querySelector('[data-act=delete]').addEventListener(
+                            'click',
+                            async (e) => {
+                                e.stopPropagation();
+                                if (!confirm(`Hapus session ${s.id}?`)) return;
+                                await api(`/sessions/${s.id}?logout=true`, {
+                                    method: 'DELETE',
+                                });
+                                if (currentSession === s.id)
+                                    currentSession = null;
+                                refresh();
+                            },
+                        );
+                        list.appendChild(div);
+                    }
+                } catch (e) {
+                    list.innerHTML = `<div class="muted">${e.message}</div>`;
+                }
+            }
+
+            $('createSession').addEventListener('click', async () => {
+                const id = $('newSession').value.trim();
+                if (!id) return;
+                await api('/sessions', { method: 'POST', body: { id } });
+                $('newSession').value = '';
+                currentSession = id;
+                refresh();
+            });
+
+            function renderFields() {
+                const kind = $('kind').value;
+                const div = $('fields');
+                if (kind === 'text') {
+                    div.innerHTML = `<textarea id="message" placeholder="message"></textarea>`;
+                } else if (kind === 'media') {
+                    div.innerHTML = `
+            <input id="fileUrl" placeholder="https://.../file.jpg" />
+            <input id="caption" placeholder="caption (optional)" style="margin-top:0.4rem" />
+            <div class="row" style="margin-top:0.4rem">
+              <label><input type="checkbox" id="asDocument"/> as document</label>
+              <label><input type="checkbox" id="asVoice"/> as voice</label>
+              <label><input type="checkbox" id="asSticker"/> as sticker</label>
+            </div>
+          `;
+                } else if (kind === 'location') {
+                    div.innerHTML = `
+            <div class="grid-2">
+              <input id="latitude" placeholder="latitude" />
+              <input id="longitude" placeholder="longitude" />
+            </div>
+            <input id="name" placeholder="name (optional)" style="margin-top:0.4rem" />
+            <input id="address" placeholder="address (optional)" style="margin-top:0.4rem" />
+          `;
+                }
+            }
+            $('kind').addEventListener('change', renderFields);
+            renderFields();
+
+            $('enqueueBtn').addEventListener('click', async () => {
+                if (!currentSession) return alert('pilih session dulu');
+                const target = $('target').value.trim();
+                if (!target) return alert('target wajib');
+                const kind = $('kind').value;
+                const body = { target };
+                const sched = $('scheduleAt').value;
+                if (sched) body.scheduleAt = new Date(sched).toISOString();
+
+                if (kind === 'text') body.message = $('message').value;
+                if (kind === 'media') {
+                    body.fileUrl = $('fileUrl').value;
+                    body.caption = $('caption').value;
+                    body.asDocument = $('asDocument').checked;
+                    body.asVoice = $('asVoice').checked;
+                    body.asSticker = $('asSticker').checked;
+                }
+                if (kind === 'location') {
+                    body.latitude = parseFloat($('latitude').value);
+                    body.longitude = parseFloat($('longitude').value);
+                    body.name = $('name').value;
+                    body.address = $('address').value;
+                }
+                try {
+                    await api(`/sessions/${currentSession}/send/${kind}`, {
+                        method: 'POST',
+                        body,
+                    });
+                    await loadSession();
+                } catch (e) {
+                    alert(e.message);
+                }
+            });
+
+            async function loadSession() {
+                if (!currentSession) {
+                    $('statusBox').textContent = 'pilih session di kiri';
+                    $('qrCard').hidden = true;
+                    $('composeCard').hidden = true;
+                    $('queueCard').hidden = true;
+                    return;
+                }
+                try {
+                    const h = await api(`/sessions/${currentSession}/health`);
+                    const s = h;
+                    $('statusBox').innerHTML = `
+            <strong>${s.id}</strong> ${pill(s)}
+            <div class="muted">${s.info ? s.info.pushname + ' / ' + s.info.wid + ' / ' + s.info.platform : '—'}</div>
+          `;
+                    if (!s.ready && s.hasQr) {
+                        $('qrCard').hidden = false;
+                        const t = Date.now();
+                        $('qrImg').src =
+                            authMode === 'apikey'
+                                ? `/sessions/${currentSession}/qr?key=${encodeURIComponent(apikeyInput.value)}&t=${t}`
+                                : `/sessions/${currentSession}/qr?t=${t}`;
+                    } else {
+                        $('qrCard').hidden = true;
+                    }
+                    $('composeCard').hidden = !s.ready;
+                    $('queueCard').hidden = false;
+
+                    const q = await api(
+                        `/sessions/${currentSession}/queue?limit=80`,
+                    );
+                    const stats = q.stats;
+                    $('queueStats').innerHTML = `total ${stats.total} ·
+            <span class="stat pending">pending ${stats.pending || 0}</span>
+            <span class="stat sending">sending ${stats.sending || 0}</span>
+            <span class="stat sent">sent ${stats.sent || 0}</span>
+            <span class="stat failed">failed ${stats.failed || 0}</span>`;
+                    $('queueBody').innerHTML = q.jobs
+                        .map(
+                            (j) => `
+            <tr>
+              <td>${j.id.split('_').slice(-1)[0]}</td>
+              <td>${j.type}</td>
+              <td>${j.target}</td>
+              <td><span class="stat ${j.status}">${j.status}</span></td>
+              <td>${j.scheduledAt ? new Date(j.scheduledAt).toLocaleString() : ''}</td>
+              <td>${new Date(j.createdAt).toLocaleString()}</td>
+              <td>${j.status === 'pending' ? `<button class="danger" data-cancel="${j.id}">cancel</button>` : ''}</td>
+            </tr>
+          `,
+                        )
+                        .join('');
+                    $('queueBody')
+                        .querySelectorAll('[data-cancel]')
+                        .forEach((btn) => {
+                            btn.addEventListener('click', async () => {
+                                await api(
+                                    `/sessions/${currentSession}/queue/${btn.dataset.cancel}`,
+                                    { method: 'DELETE' },
+                                );
+                                loadSession();
+                            });
+                        });
+                } catch (e) {
+                    $('statusBox').textContent = e.message;
+                }
+            }
+
+            async function refresh() {
+                await loadSessions();
+                await loadSession();
+            }
+
+            function loop() {
+                if (timer) clearInterval(timer);
+                timer = setInterval(refresh, 3000);
+            }
+            bootstrap().then(() => {
+                refresh();
+                loop();
+            });
+        </script>
+    </body>
+</html>
